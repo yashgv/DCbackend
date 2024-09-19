@@ -6,6 +6,7 @@ import io
 from object_detector import HomogeneousBgDetector
 import logging
 
+
 logging.basicConfig(filename='info.log', level=logging.DEBUG)
 
 def log_info(req_body, res_body):
@@ -13,7 +14,7 @@ def log_info(req_body, res_body):
     logging.info(res_body)
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/process-image/": {"origins": "*"}})
 
 def process_image(img):
     # Load Aruco detector

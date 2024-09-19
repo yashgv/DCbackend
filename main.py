@@ -1,31 +1,19 @@
-from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import StreamingResponse
+from flask import Flask, request, send_file
+from flask_cors import CORS
 import cv2
 import numpy as np
 import io
 from object_detector import HomogeneousBgDetector
-
-from fastapi.middleware.cors import CORSMiddleware
 import logging
 
 logging.basicConfig(filename='info.log', level=logging.DEBUG)
-
 
 def log_info(req_body, res_body):
     logging.info(req_body)
     logging.info(res_body)
 
-
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Adjust this as needed
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
+app = Flask(__name__)
+CORS(app)
 
 def process_image(img):
     # Load Aruco detector
@@ -82,10 +70,16 @@ def process_image(img):
 
     return img, "Image processed successfully"
 
-@app.post("/process-image/")
-async def process_image_api(file: UploadFile = File(...)):
+@app.route('/process-image/', methods=['POST'])
+def process_image_api():
+    if 'file' not in request.files:
+        return "No file part", 400
+    file = request.files['file']
+    if file.filename == '':
+        return "No selected file", 400
+    
     # Read image file
-    contents = await file.read()
+    contents = file.read()
     nparr = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
@@ -96,11 +90,13 @@ async def process_image_api(file: UploadFile = File(...)):
     _, img_encoded = cv2.imencode('.png', processed_img)
     
     # Prepare the response
-    response = StreamingResponse(io.BytesIO(img_encoded.tobytes()), media_type="image/png")
+    response = send_file(
+        io.BytesIO(img_encoded.tobytes()),
+        mimetype='image/png'
+    )
     response.headers["X-Process-Message"] = message
     
     return response
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, port=8000)
+    app.run( debug=True)

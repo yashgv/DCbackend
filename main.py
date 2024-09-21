@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, send_file
 from flask_cors import CORS
 import cv2
@@ -5,7 +6,6 @@ import numpy as np
 import io
 from object_detector import HomogeneousBgDetector
 import logging
-
 
 logging.basicConfig(filename='info.log', level=logging.DEBUG)
 
@@ -98,6 +98,7 @@ def process_image_api():
     response.headers["X-Process-Message"] = message
     
     return response
-
+    
 if __name__ == "__main__":
-    app.run( debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
